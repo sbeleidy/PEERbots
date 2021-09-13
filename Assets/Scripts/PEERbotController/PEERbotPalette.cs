@@ -6,6 +6,7 @@ using UnityEngine.UI;
 [System.Serializable]
 public class PEERbotPalette : MonoBehaviour {
 
+
   public string title = "";
   
   public List<PEERbotButton> buttons;

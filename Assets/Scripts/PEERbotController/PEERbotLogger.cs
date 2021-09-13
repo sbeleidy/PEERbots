@@ -133,6 +133,7 @@ public class PEERbotLogger : MonoBehaviour {
         Sinbad.CsvUtil.SaveObjects(single, logPath + SLASH + "[LOG] MasterLog.csv", true);
         */
     }
+
     public void SaveLog(string logName) {
         //Check and make sure path and path are not null.
         if(log == null) { Debug.LogWarning("Button Log is null! Cannot save log."); return; }
@@ -169,7 +170,6 @@ public class PEERbotLogger : MonoBehaviour {
         Debug.Log("Log saved at " + logPath + SLASH + logName);
     }
 
-
     public void startLogging() { 
         if(isLogging) { stopLogging(); }
         isLogging = true;
@@ -181,6 +181,7 @@ public class PEERbotLogger : MonoBehaviour {
             SaveLog("[LOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
             SavePaletteLog("[PaletteLOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
             SaveQuickSpeechLog("[QuickSpeechLOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
+
             isLogging = false;
             if(activeLabel != null) { activeLabel.SetActive(false); }
         } else {
