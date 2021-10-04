@@ -1,5 +1,4 @@
-﻿
-using System;
+﻿using System;
 using System.IO;
 using System.Collections;
 using System.Collections.Generic;
@@ -22,13 +21,13 @@ public class PEERbotLogger : MonoBehaviour {
     public List<PEERbotButtonDataFull> log;
     public List<PEERbotPaletteLogData> paletteLog;
     public List<PEERbotButtonQuickSpeechData> quickSpeechLog;
-    public GameObject activeLabel;
+    public List<PEERbotButtonDataFull> buttonLog;
 
     public string sessionID = "";
     private string timezone = "";
     private bool isLogging = false;
     public bool autoStartLogging = true;
-    public static string lastPalette = "Initial Palette";
+    public static string lastPalette = null;
 
     void Awake() {
         //Get local timezone
@@ -77,12 +76,20 @@ public class PEERbotLogger : MonoBehaviour {
     ///***************************************************///
     ///***************CSV LOGGING FUNCTIONS***************///
     ///***************************************************///
+    public void addToMasterLog(string date, string time, string type, string json)
+    {
+        string path = logPath + SLASH + "[LOG] MasterLog.log";
+        StreamWriter writer = new StreamWriter(path, true);
+
+        writer.WriteLine(date + " " + time + " - " + type + " - " + json);
+        writer.Close();
+    }
     public void AddToLog() { AddToLog(pc.currentPalette, pc.currentButton.data); }
     public void AddToLog(PEERbotPalette palette, PEERbotButtonDataFull data) { 
         if(!isLogging) { return; }
         if (palette == null || data ==  null) 
         {
-            Debug.LogWarning("Palette or button is null! Cannot add to Log!");
+            Debug.LogWarning("Button is null! Cannot add to Log!");
             return;
         }
 
@@ -93,22 +100,22 @@ public class PEERbotLogger : MonoBehaviour {
         //Check if quick speech
         if (data.title == "Quick Speech")
         {
+            data.logType = "Quick Speech";
+            log.Add(data);
             PEERbotButtonQuickSpeechData logged = new PEERbotButtonQuickSpeechData();
-            logged.logType = "Quick Speech";
             logged.speech = data.speech;
             logged.palette = data.palette;
             logged.date = data.date;
             logged.time = data.time;
             quickSpeechLog.Add(logged);
-            /********************
-            //TODO: Figure out master log
-            ********************/
+            string json = JsonUtility.ToJson(logged);
+            addToMasterLog(logged.date, logged.time, "Quick Speech", json);
         }
         else {  
+            buttonLog.Add(data);
             log.Add(data);
-            //Add to master log file
-            List<PEERbotButtonDataFull> single = new List<PEERbotButtonDataFull>(); single.Add(data);
-            Sinbad.CsvUtil.SaveObjects(single, logPath + SLASH + "[LOG] MasterLog.csv", true);
+            string json = JsonUtility.ToJson(data);
+            addToMasterLog(data.date, data.time, "Button", json);
         }
     }
 
@@ -121,17 +128,20 @@ public class PEERbotLogger : MonoBehaviour {
             return;
         }
         PEERbotPaletteLogData data = new PEERbotPaletteLogData();
-        data.newValue = palette.title;
+        if (lastPalette == null){
+            GameObject paletteScript = GameObject.Find("PEERbotPalette");
+            PEERbotPalette script = palette.GetComponent<PEERbotPalette>();
+            data.lastPalette = script.initialPalette;
+        } else {
+            data.lastPalette = lastPalette;
+        }
+        data.newPalette = palette.title;
         data.date = System.DateTime.Now.ToString("yyyy-MM-dd");
         data.time = System.DateTime.Now.ToString("hh:mm:sstt ") + timezone;
-        data.previousValue = lastPalette;
         paletteLog.Add(data);
         lastPalette = palette.title;
-        /*
-        //Add to master log file
-        List<PEERbotPaletteLogData> single = new List<PEERbotPaletteLogData>(); single.Add(data);
-        Sinbad.CsvUtil.SaveObjects(single, logPath + SLASH + "[LOG] MasterLog.csv", true);
-        */
+        string json = JsonUtility.ToJson(data);
+        addToMasterLog(data.date, data.time, "Palette Selected", json);
     }
 
     public void SaveLog(string logName) {
@@ -170,20 +180,30 @@ public class PEERbotLogger : MonoBehaviour {
         Debug.Log("Log saved at " + logPath + SLASH + logName);
     }
 
+     public void SaveButtonLog(string logName) {
+        Debug.Log("IT made it");
+        //Check and make sure path and path are not null.
+        if(buttonLog == null) { Debug.LogWarning("Button Log is null! Cannot save log."); Debug.Log("1");return; }
+        if(buttonLog.Count == 0) { Debug.LogWarning("Button Log is empty! Cannot save log.");Debug.Log("2"); return; }
+        //Make sure path and name is not null or empty.
+        if(string.IsNullOrEmpty(logPath)) { Debug.LogWarning("logPath is null or empty! Cannot save log."); return; }
+        if(string.IsNullOrEmpty(logName)) { Debug.LogWarning("logName is null or empty! Cannot save log."); return; }
+        //Save using sinban CSV auto json parser
+        Sinbad.CsvUtil.SaveObjects(buttonLog, logPath + SLASH + logName, true);
+        Debug.Log("Log saved at " + logPath + SLASH + logName);
+    }
+
     public void startLogging() { 
         if(isLogging) { stopLogging(); }
         isLogging = true;
-        if(activeLabel != null) { activeLabel.SetActive(true); }
-        log = new List<PEERbotButtonDataFull>();
     }
     public void stopLogging() {
         if(isLogging) {
             SaveLog("[LOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
             SavePaletteLog("[PaletteLOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
+            SaveButtonLog("[ButtonLog] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
             SaveQuickSpeechLog("[QuickSpeechLOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
-
             isLogging = false;
-            if(activeLabel != null) { activeLabel.SetActive(false); }
         } else {
             Debug.Log("Log not started, cannot save log.");
         }

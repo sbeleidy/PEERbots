@@ -17,16 +17,19 @@ public class PEERbotPalette : MonoBehaviour {
   [System.NonSerialized]
   private PEERbotController wc;
 
-  [System.NonSerialized]
-  private PEERbotLogger logger;
+
+[System.NonSerialized]
+ public string initialPalette = null;
 
   void Awake() { 
     buttons = new List<PEERbotButton>();
     wc = GlobalObjectFinder.FindGameObjectWithTag("PEERbotController").GetComponent<PEERbotController>(); 
-    logger = GlobalObjectFinder.FindGameObjectWithTag("PEERbotLogger").GetComponent<PEERbotLogger>(); 
   } 
 
   public void Select() {
+    if (initialPalette == null){
+      initialPalette = wc.currentPalette.title;
+    }
     wc.selectPalette(this);
   }
 
@@ -44,8 +47,8 @@ public class PEERbotPaletteData {
 public class PEERbotPaletteLogData
 {
   public const string logType = "changePalette";
-  public string newValue = "";
-  public string previousValue = "";
+  public string newPalette = "";
+  public string lastPalette = "";
   public string date;
   public string time;
 }

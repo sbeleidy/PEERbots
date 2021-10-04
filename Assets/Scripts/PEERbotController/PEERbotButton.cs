@@ -28,6 +28,7 @@ public class PEERbotButton : MonoBehaviour {
 [System.Serializable]
 public class PEERbotButtonDataFull : PEERbotButtonData { //Additional data is logged and sent.
   //Logging Vars
+  public string logType = "Button";
   public string date = "";
   public string time = "";
   public string palette = "";
@@ -61,9 +62,10 @@ public class PEERbotButtonData { //Simplified data is used only for saving/loadi
 
 [System.Serializable]
 public class PEERbotButtonQuickSpeechData {
-  public string logType = "";
+  public const string logType = "Quick Speech";
   public string speech = "";
   public string palette = "";
   public string date = "";
   public string time = "";
+  
 }
