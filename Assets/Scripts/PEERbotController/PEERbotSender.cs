@@ -55,11 +55,12 @@ public class PEERbotSender : MonoBehaviour {
     }
     //Initializing Send Mode.
     public void setSendMode(int mode) {
+        logger.AddtoConnectionLog(sendMode, (SendMode) mode);
         sendMode = (SendMode)mode;
         PlayerPrefs.SetInt("SendMode", mode);
 
         //Bluetooth specific
-        //bluetoothPanel.SetActive(sendMode == SendMode.BLUETOOTH);
+        //bluetoothPanel.SetActive(sendMode == SendMode.BsLUETOOTH);
         
         //UDP Specific
         //udpPanel.SetActive(sendMode == SendMode.UDP);
