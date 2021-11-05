@@ -213,7 +213,7 @@ public class PEERbotLogger : MonoBehaviour {
     }
 
     public void logModifyButton(string title, string attributeChanged, string from, string to){
-        if (title == pc.currentButton.data.title || fromTitleChange){
+        if ((from != to) && (title == pc.currentButton.data.title || fromTitleChange)){
             buttonModification mod = new buttonModification();
             mod.palette = pc.currentPalette.title;
             mod.attributeChanged = attributeChanged;
@@ -226,6 +226,8 @@ public class PEERbotLogger : MonoBehaviour {
             Debug.Log(JsonUtility.ToJson(mod));
             modificationLog.Add(mod);
             fromTitleChange = false;
+            string json = JsonUtility.ToJson(mod);
+            addToMasterLog(mod.date, mod.time, "modifyButton", json);
         }
     }
 
