@@ -8,6 +8,18 @@ using UnityEngine.UI;
 
 using SFB;
 
+public class buttonModification {
+    public const string logType = "modifyButton";
+    public string palette; 
+    public string title;
+    public string attributeChanged;
+    public string previousValue;
+    public string newValue;
+    public string time;
+    public string date; 
+
+}
+
 public class PEERbotBlinkData {
 
     public const string logType = "blinkRobot";
@@ -47,12 +59,29 @@ public class PEERbotLogger : MonoBehaviour {
     public List<PEERbotBlinkData> blinkLog = new List<PEERbotBlinkData>();
     public List<PEERbotSendModeData> connectionLog = new List<PEERbotSendModeData>();
 
+    public List<PEERbotButtonDataFull> buttonAuthorLog = new List<PEERbotButtonDataFull>();
+
+    public List<buttonModification> modificationLog = new List<buttonModification>();
+
 
     public string sessionID = "";
     private string timezone = "";
     private bool isLogging = false;
     public bool autoStartLogging = true;
+
+    public bool finishedLoadingPalette = false;
+    public bool finishedLoadingSubgoal = false;
+    private bool fromTitleChange = false;
     public static string lastPalette = null;
+
+    public string prevTitle = "";
+    public string prevColor = "";
+    public string prevEmotion = "";
+    public string prevSpeech = "";
+    public string prevGoal = "";
+    public string prevSubgoal = "";
+    public string prevProficiency = "";
+
 
     void Awake() {
         //Get local timezone
@@ -109,6 +138,97 @@ public class PEERbotLogger : MonoBehaviour {
         writer.WriteLine(date + " " + time + " - " + type + " - " + json);
         writer.Close();
     }
+
+    public void logButtonCreation(PEERbotButton button){
+        PEERbotButtonDataFull buttonCreateLog = button.data;
+        buttonCreateLog.logType = "createButton";
+        buttonCreateLog.date = System.DateTime.Now.ToString("yyyy-MM-dd");
+        buttonCreateLog.time = System.DateTime.Now.ToString("hh:mm:sstt ") + timezone;
+        buttonAuthorLog.Add(buttonCreateLog);
+        string json = JsonUtility.ToJson(buttonCreateLog);
+        addToMasterLog(buttonCreateLog.date, buttonCreateLog.time, "createButton", json);
+    }
+
+    public void logButtonCopy(PEERbotButton button){
+        PEERbotButtonDataFull buttonCopyLog = button.data;
+        buttonCopyLog.logType = "copyButton";
+        buttonCopyLog.date = System.DateTime.Now.ToString("yyyy-MM-dd");
+        buttonCopyLog.time = System.DateTime.Now.ToString("hh:mm:sstt ") + timezone;
+        buttonAuthorLog.Add(buttonCopyLog);
+        string json = JsonUtility.ToJson(buttonCopyLog);
+        addToMasterLog(buttonCopyLog.date, buttonCopyLog.time, "copyButton", json);
+    }
+
+    public void logButtonDelete(PEERbotButton button){
+        PEERbotButtonDataFull buttonDeleteLog = button.data;
+        buttonDeleteLog.logType = "deleteButton";
+        buttonDeleteLog.date = System.DateTime.Now.ToString("yyyy-MM-dd");
+        buttonDeleteLog.time = System.DateTime.Now.ToString("hh:mm:sstt ") + timezone;
+        buttonAuthorLog.Add(buttonDeleteLog);
+        string json = JsonUtility.ToJson(buttonDeleteLog);
+        addToMasterLog(buttonDeleteLog.date, buttonDeleteLog.time, "deleteButton", json);
+    }
+
+    public void modifyTitle() {
+        fromTitleChange = true;
+        logModifyButton(prevTitle, "Title", prevTitle, pc.currentButton.data.title);
+    }
+    
+    public void modifyColor() {
+        if (finishedLoadingPalette)
+            logModifyButton(pc.currentButton.data.title, "Color", prevColor, pc.currentButton.data.color);
+        prevColor = "";
+    }
+
+    public void modifyEmotion() {
+        if (finishedLoadingPalette)
+            logModifyButton(pc.currentButton.data.title, "Emotion", prevEmotion, pc.currentButton.data.emotion);
+        prevEmotion = "";
+        
+    }
+
+    public void modifySpeech() {
+        if (finishedLoadingPalette)
+            logModifyButton(pc.currentButton.data.title, "Speech", prevSpeech, pc.currentButton.data.speech);
+        prevSpeech = "";
+    }
+
+    public void modifyGoal() {
+        if (finishedLoadingPalette)
+            logModifyButton(pc.currentButton.data.title, "Goal", prevGoal, pc.currentButton.data.goal);
+        prevGoal = "";
+        
+    }
+
+    public void modifySubgoal() {
+        if (finishedLoadingPalette && finishedLoadingSubgoal)
+            logModifyButton(pc.currentButton.data.title, "Subgoal", prevSubgoal, pc.currentButton.data.subgoal);
+        prevSubgoal = "";
+    }
+
+    public void modifyProficiency() {
+        if (finishedLoadingPalette)
+            logModifyButton(pc.currentButton.data.title, "Proficiency", prevProficiency, pc.currentButton.data.proficiency);
+        prevProficiency = "";
+    }
+
+    public void logModifyButton(string title, string attributeChanged, string from, string to){
+        if (title == pc.currentButton.data.title || fromTitleChange){
+            buttonModification mod = new buttonModification();
+            mod.palette = pc.currentPalette.title;
+            mod.attributeChanged = attributeChanged;
+            mod.title = title;
+            mod.attributeChanged = attributeChanged;
+            mod.previousValue = from;
+            mod.newValue = to;
+            mod.date = System.DateTime.Now.ToString("yyyy-MM-dd");
+            mod.time = System.DateTime.Now.ToString("hh:mm:sstt ") + timezone;
+            Debug.Log(JsonUtility.ToJson(mod));
+            modificationLog.Add(mod);
+            fromTitleChange = false;
+        }
+    }
+
     public void AddToLog() {AddToLog(pc.currentPalette, pc.currentButton.data); }
     public void AddToLog(PEERbotPalette palette, PEERbotButtonDataFull data) { 
         if(!isLogging) { return; }
@@ -125,7 +245,7 @@ public class PEERbotLogger : MonoBehaviour {
         //Check if quick speech
         if (data.title == "Quick Speech")
         {
-            data.logType = "Quick Speech";
+            data.logType = "sayQuick";
             log.Add(data);
             PEERbotButtonQuickSpeechData logged = new PEERbotButtonQuickSpeechData();
             logged.speech = data.speech;
@@ -134,12 +254,12 @@ public class PEERbotLogger : MonoBehaviour {
             logged.time = data.time;
             quickSpeechLog.Add(logged);
             string json = JsonUtility.ToJson(logged);
-            addToMasterLog(logged.date, logged.time, "Quick Speech", json);
+            addToMasterLog(logged.date, logged.time, "sayQuick", json);
         }   else {  
             buttonLog.Add(data);
             log.Add(data);
             string json = JsonUtility.ToJson(data);
-            addToMasterLog(data.date, data.time, "Button", json);
+            addToMasterLog(data.date, data.time, "sayButton", json);
         }
     }
 
@@ -227,8 +347,8 @@ public class PEERbotLogger : MonoBehaviour {
 
      public void SaveButtonLog(string logName) {
         //Check and make sure path and path are not null.
-        if(buttonLog == null) { Debug.LogWarning("Button Log is null! Cannot save log."); Debug.Log("1");return; }
-        if(buttonLog.Count == 0) { Debug.LogWarning("Button Log is empty! Cannot save log.");Debug.Log("2"); return; }
+        if(buttonLog == null) { Debug.LogWarning("Button Log is null! Cannot save log."); return; }
+        if(buttonLog.Count == 0) { Debug.LogWarning("Button Log is empty! Cannot save log."); return; }
         //Make sure path and name is not null or empty.
         if(string.IsNullOrEmpty(logPath)) { Debug.LogWarning("logPath is null or empty! Cannot save log."); return; }
         if(string.IsNullOrEmpty(logName)) { Debug.LogWarning("logName is null or empty! Cannot save log."); return; }
@@ -239,8 +359,8 @@ public class PEERbotLogger : MonoBehaviour {
 
     public void SaveBlinkLog(string logName) {
         //Check and make sure path and path are not null.
-        if(blinkLog == null) { Debug.LogWarning("Button Log is null! Cannot save log."); Debug.Log("1");return; }
-        if(blinkLog.Count == 0) { Debug.LogWarning("Button Log is empty! Cannot save log.");Debug.Log("2"); return; }
+        if(blinkLog == null) { Debug.LogWarning("Button Log is null! Cannot save log."); return; }
+        if(blinkLog.Count == 0) { Debug.LogWarning("Button Log is empty! Cannot save log."); return; }
         //Make sure path and name is not null or empty.
         if(string.IsNullOrEmpty(logPath)) { Debug.LogWarning("logPath is null or empty! Cannot save log."); return; }
         if(string.IsNullOrEmpty(logName)) { Debug.LogWarning("logName is null or empty! Cannot save log."); return; }
@@ -251,13 +371,38 @@ public class PEERbotLogger : MonoBehaviour {
 
     public void SaveConnectionLog(string logName) {
         //Check and make sure path and path are not null.
-        if(connectionLog == null) { Debug.LogWarning("Button Log is null! Cannot save log."); Debug.Log("1");return; }
-        if(connectionLog.Count == 0) { Debug.LogWarning("Button Log is empty! Cannot save log.");Debug.Log("2"); return; }
+        if(connectionLog == null) { Debug.LogWarning("Button Log is null! Cannot save log."); return; }
+        if(connectionLog.Count == 0) { Debug.LogWarning("Button Log is empty! Cannot save log."); return; }
         //Make sure path and name is not null or empty.
         if(string.IsNullOrEmpty(logPath)) { Debug.LogWarning("logPath is null or empty! Cannot save log."); return; }
         if(string.IsNullOrEmpty(logName)) { Debug.LogWarning("logName is null or empty! Cannot save log."); return; }
         //Save using sinban CSV auto json parser
         Sinbad.CsvUtil.SaveObjects(connectionLog, logPath + SLASH + logName, true);
+        Debug.Log("Log saved at " + logPath + SLASH + logName);
+    }
+
+    public void SaveButtonAuthorLog(string logName) {
+        //Check and make sure path and path are not null.
+        if(buttonAuthorLog == null) { Debug.LogWarning("Button Log is null! Cannot save log."); return; }
+        if(buttonAuthorLog.Count == 0) { Debug.LogWarning("Button Log is empty! Cannot save log."); return; }
+        //Make sure path and name is not null or empty.
+        if(string.IsNullOrEmpty(logPath)) { Debug.LogWarning("logPath is null or empty! Cannot save log."); return; }
+        if(string.IsNullOrEmpty(logName)) { Debug.LogWarning("logName is null or empty! Cannot save log."); return; }
+        //Save using sinban CSV auto json parser
+        Sinbad.CsvUtil.SaveObjects(buttonAuthorLog, logPath + SLASH + logName, true);
+        Debug.Log("Log saved at " + logPath + SLASH + logName);
+    }
+
+    public void SaveModificationLog(string logName) {
+        //Check and make sure path and path are not null.
+        if(modificationLog == null) { Debug.LogWarning("Button Log is null! Cannot save log."); return; }
+        if(modificationLog.Count == 0) { Debug.LogWarning("Button Log is empty! Cannot save log."); return; }
+        //Make sure path and name is not null or empty.
+        if(string.IsNullOrEmpty(logPath)) { Debug.LogWarning("logPath is null or empty! Cannot save log."); return; }
+        if(string.IsNullOrEmpty(logName)) { Debug.LogWarning("logName is null or empty! Cannot save log."); return; }
+        //Save using sinban CSV auto json parser
+        Debug.Log(modificationLog.Count);
+        Sinbad.CsvUtil.SaveObjects(modificationLog, logPath + SLASH + logName, true);
         Debug.Log("Log saved at " + logPath + SLASH + logName);
     }
 
@@ -273,6 +418,8 @@ public class PEERbotLogger : MonoBehaviour {
             SaveQuickSpeechLog("[QuickSpeechLOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
             SaveBlinkLog("[BlinkLOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
             SaveConnectionLog("[ConnectionLOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
+            SaveButtonAuthorLog("[ButtonAuthorLOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
+            SaveModificationLog("[ButtonModificationLOG] " + sessionID + ((sessionID.Length>0)?" ":"") + System.DateTime.Now.ToString("yyyy-MM-dd hh-mm-sstt") + ".csv");
             isLogging = false;
         }
     }
