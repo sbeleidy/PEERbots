@@ -10,6 +10,7 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
     public PEERbotController pc;
     public PEERbotMappings mappings;
     public PEERbotSaveLoad saveloader;
+    public PEERbotLogger logger;
     
     [Header("Palette UI")]
     public InputField paletteTitle;
@@ -55,7 +56,9 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
                                   Application.platform == RuntimePlatform.IPhonePlayer);
         sharePaletteButton.SetActive(Application.platform == RuntimePlatform.Android ||
                                      Application.platform == RuntimePlatform.IPhonePlayer);
-                                     
+
+        GameObject theLogger = GameObject.FindWithTag("PEERbotLogger");
+        logger = theLogger.GetComponent<PEERbotLogger>();
         //Init Dropdowns
         initColorDropdown();
         initEmotionDropdown();
@@ -111,6 +114,7 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
         switchSubgoalDropdown(buttonGoal.value, subgoalIndex);
     }
     public void switchSubgoalDropdown(int goal, int subgoal) {
+        logger.finishedLoadingSubgoal = false;
         if(0 <= goal && goal < mappings.goals.Count) {
             foreach(GoalMap goalmap in mappings.goals) {
                 goalmap.subgoalDropdown.gameObject.SetActive(false);
@@ -119,6 +123,7 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
             mappings.goals[goal].subgoalDropdown.value = (mappings.goals[goal].subgoals.Count>0) ? 1 : 0;
             mappings.goals[goal].subgoalDropdown.value = (0 <= subgoal && subgoal < mappings.goals[goal].subgoals.Count) ? subgoal : 0;
         } else { Debug.LogWarning("Goal [" + goal + "] out of range when switching subgoal dropdown!"); }
+        logger.finishedLoadingSubgoal = true;
     }
 
     ///*************************************************///
@@ -189,6 +194,7 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
 
     //For Button Color and Title
     public void setButtonTitle(string text) { if(!pc.currentButton) { Debug.LogWarning("No button selected! Cannot set button title."); return; }
+        logger.prevTitle = pc.currentButton.data.title;
         buttonTitle.text = text; //Set UI
         pc.currentButton.data.title = text; //Set data
         if(!string.IsNullOrEmpty(text)) pc.currentButton.gameObject.name = text; //Change GameObject Name
@@ -200,9 +206,11 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
         //If button speech data is empty (and title is not), replace it with title
         if((!string.IsNullOrEmpty(text)) && string.IsNullOrEmpty(pc.currentButton.data.speech)) { setSpeech(text); }
     }
+
     public Color32 getButtonColor32() { return mappings.colors[buttonColor.value].color; }
     
     public void setButtonColor(string text) {
+        logger.prevColor = pc.currentButton.data.color;
         setButtonColor(mappings.getColorIndexFromString(text));
     }
     public void setButtonColor(int index) {  if(!pc.currentButton) { Debug.LogWarning("No button selected! Cannot set button color."); return; }
@@ -216,7 +224,10 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
     
     //Speech vars
     public void setSpeech(string text) { if(!pc.currentButton) { Debug.LogWarning("No button selected! Cannot set speech."); return; }
-        if(speechField) speechField.text = text; //Set UI
+        if(speechField){
+            logger.prevSpeech = pc.currentButton.data.speech;
+            speechField.text = text;
+        }  //Set UI
         pc.currentButton.data.speech = text; //Set data
     }
     public void setSpeechVolume(float value) { if(!pc.currentButton) { Debug.LogWarning("No button selected! Cannot set volume."); return; }
@@ -242,6 +253,7 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
     }
     //Emotion vars
     public void setEmotion(string text) {
+        logger.prevEmotion = pc.currentButton.data.emotion;
         setEmotion(mappings.getEmotionIndexFromString(text));
     }
     public void setEmotion(int index) { if(!pc.currentButton) { Debug.LogWarning("No button selected! Cannot set emotion."); return; }    
@@ -250,6 +262,8 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
     }
     //Goal/Subgoal/Proficiency vars    
     public void setButtonGoal(string goal) { 
+        if(!pc.currentButton) { Debug.LogWarning("No button selected! Cannot set emotion."); return; } 
+        logger.prevGoal = pc.currentButton.data.goal;
         for(int i = 0; i < mappings.goals.Count; i++) { 
             if (goal.ToLower() == mappings.goals[i].goal.ToLower()) { setButtonGoal(i); return; } 
         }
@@ -259,8 +273,13 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
         buttonGoal.value = index;
     }
     public int getButtonSubgoal() { return mappings.goals[buttonGoal.value].subgoalDropdown.value; }
-    public void setButtonSubgoal(int index) { setButtonSubgoal(buttonGoal.value, index); }
-    public void setButtonSubgoal(string goal, string subgoal) { 
+    public void setButtonSubgoal(int index) { 
+        if(!pc.currentButton) { Debug.LogWarning("No button selected! Cannot set subgoal."); return; } 
+        logger.prevSubgoal = pc.currentButton.data.subgoal;
+        setButtonSubgoal(buttonGoal.value, index); 
+        }
+    public void setButtonSubgoal(string goal, string subgoal) {
+        if(!pc.currentButton) { Debug.LogWarning("No button selected! Cannot set subgoal."); return; }  
         for(int i = 0; i < mappings.goals.Count; i++) { 
             if (goal.ToLower() == mappings.goals[i].goal.ToLower()) { setButtonSubgoal(i, subgoal); return; } 
         }
@@ -282,6 +301,7 @@ public class PEERbotButtonEditorUI : MonoBehaviour {
         pc.currentButton.data.subgoal = subgoal;
     }
     public void setButtonProficiency(string proficiency) { 
+        logger.prevProficiency = pc.currentButton.data.proficiency;
         for(int i = 0; i < buttonProficiency.options.Count; i++) { 
             if (proficiency.ToLower() == buttonProficiency.options[i].text.ToLower()) { 
                 setButtonProficiency(i); return; 

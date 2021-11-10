@@ -55,11 +55,12 @@ public class PEERbotSender : MonoBehaviour {
     }
     //Initializing Send Mode.
     public void setSendMode(int mode) {
+        logger.AddtoConnectionLog(sendMode, (SendMode) mode);
         sendMode = (SendMode)mode;
         PlayerPrefs.SetInt("SendMode", mode);
 
         //Bluetooth specific
-        //bluetoothPanel.SetActive(sendMode == SendMode.BLUETOOTH);
+        //bluetoothPanel.SetActive(sendMode == SendMode.BsLUETOOTH);
         
         //UDP Specific
         //udpPanel.SetActive(sendMode == SendMode.UDP);
@@ -162,7 +163,7 @@ public class PEERbotSender : MonoBehaviour {
 
     //---SEND MESSAGE---//
     public void sendMessage() { 
-        //Try to send the current button if exist
+        //Try to the current button if exist
         if(pc.currentButton != null) { sendMessage(pc.currentButton); } 
         //Otherwise just send whatever is in the UI
         //else { sendQuickSpeech(editorUI.speechField.text); }

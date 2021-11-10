@@ -6,7 +6,7 @@ using UnityEngine.UI;
 [System.Serializable]
 public class PEERbotPalette : MonoBehaviour {
 
-  
+
   public string title = "";
   
   public List<PEERbotButton> buttons;
@@ -17,16 +17,19 @@ public class PEERbotPalette : MonoBehaviour {
   [System.NonSerialized]
   private PEERbotController wc;
 
-  [System.NonSerialized]
-  private PEERbotLogger logger;
+
+[System.NonSerialized]
+ public string initialPalette = null;
 
   void Awake() { 
     buttons = new List<PEERbotButton>();
     wc = GlobalObjectFinder.FindGameObjectWithTag("PEERbotController").GetComponent<PEERbotController>(); 
-    logger = GlobalObjectFinder.FindGameObjectWithTag("PEERbotLogger").GetComponent<PEERbotLogger>(); 
   } 
 
   public void Select() {
+    if (initialPalette == null){
+      initialPalette = wc.currentPalette.title;
+    }
     wc.selectPalette(this);
   }
 
@@ -43,7 +46,9 @@ public class PEERbotPaletteData {
 [System.Serializable]
 public class PEERbotPaletteLogData
 {
-  public string title = "";
+  public const string logType = "changePalette";
+  public string newPalette = "";
+  public string lastPalette = "";
   public string date;
   public string time;
 }
